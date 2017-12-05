@@ -5,6 +5,9 @@
 #include <chrono>
 #include <math.h>
 #include <cstring>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -31,3 +34,5 @@ const int SIZE_TITLE[] = {80, 40, 44},
 
 const Uint16 PORT_CLIENT = 52757,
 	PORT_SERVER = 52757;
+
+const unsigned int buffer_size = 512;
