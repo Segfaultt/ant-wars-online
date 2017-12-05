@@ -77,8 +77,8 @@ void menu_loop (SDL_Renderer* renderer, SDL_Window* window)
 		title.render_from_centre(screen_width/2, screen_height/3, renderer);
 
 		//render foreground
-		buffer_texture.render_from_centre(screen_width/2, screen_height*2/3 + buffer_texture.get_height(), renderer);
-		faction_texture.render_from_centre(screen_width/2, screen_height*2/3 - faction_texture.get_height(), renderer);
+		buffer_texture.render_from_centre(screen_width/2, screen_height*2/3 + 50, renderer);
+		faction_texture.render_from_centre(screen_width/2, screen_height*2/3, renderer);
 
 		SDL_RenderPresent(renderer);
 	}
