@@ -25,8 +25,7 @@ int receiver_init (int& sockfd, sockaddr_in& sock_addr)
 		}
 	} 
 
-	return return_value;
-}
+	return return_value;}
 
 int sender_init (int& sockfd, sockaddr_in& sock_addr, char* server_ip)
 {
@@ -58,4 +57,14 @@ void receiver_loop (bool& quit, std::vector<visual_entity>& render_list)
 	while (!quit) {
 		recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&sock_addr, &socklen);
 	}
+}
+
+void simple_send (int sockfd, sockaddr_in sock_addr, char* data)
+{
+	unsigned int socklen;
+	socklen = sizeof(sock_addr);
+	char buffer[BUFFER_SIZE];
+	std::memset(buffer, 0, BUFFER_SIZE);
+	strcpy(buffer, data);
+	sendto(sockfd, buffer, BUFFER_SIZE, 0, (sockaddr *)&sock_addr, socklen);
 }

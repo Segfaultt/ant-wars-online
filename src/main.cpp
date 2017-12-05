@@ -5,14 +5,17 @@
 
 void menu_loop (SDL_Renderer* renderer, SDL_Window* window)
 {
-	//set up style
-	texture_wrapper title;
-
 	//randomly pick faction
 	srand(clock());
 	int theme = rand()%3;
 
+	//set up style
+	texture_wrapper title;
 	title.load_text("Ant Wars Colonial", COLOR_TITLE[theme], FONT[theme], SIZE_TITLE[theme], renderer);
+
+	//networking variables
+	int sockfd;
+	sockaddr_in sock_addr;
 
 	//actual menu loop
 	bool quit = false, joined = false;
@@ -58,6 +61,10 @@ void menu_loop (SDL_Renderer* renderer, SDL_Window* window)
 						buffer_texture.load_text("Enter IP address", COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
 					else
 						buffer_texture.load_text(buffer, COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
+				} else if (event.key.keysym.sym == SDLK_RETURN) {
+					SDL_StopTextInput();
+					sender_init(sockfd, sock_addr, buffer);
+					simple_send(sockfd, sock_addr, "Join");
 				}
 				break;
 			case SDL_TEXTINPUT:
