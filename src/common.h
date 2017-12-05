@@ -4,6 +4,7 @@
 #include <ctime>
 #include <chrono>
 #include <math.h>
+#include <vector>
 #include <cstring>
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -35,4 +36,4 @@ const int SIZE_TITLE[] = {80, 40, 44},
 const Uint16 PORT_CLIENT = 52757,
 	PORT_SERVER = 52757;
 
-const unsigned int buffer_size = 512;
+const unsigned int BUFFER_SIZE = 512;

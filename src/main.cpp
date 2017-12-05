@@ -15,7 +15,7 @@ void menu_loop (SDL_Renderer* renderer, SDL_Window* window)
 	title.load_text("Ant Wars Colonial", COLOR_TITLE[theme], FONT[theme], SIZE_TITLE[theme], renderer);
 
 	//actual menu loop
-	bool quit = false;
+	bool quit = false, joined = false;
 	SDL_Event event;
 	char buffer[15];
 	std::memset(buffer, 0, 15);
@@ -23,7 +23,7 @@ void menu_loop (SDL_Renderer* renderer, SDL_Window* window)
 	buffer_texture.load_text("Enter IP address", COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
 	faction_texture.load_text("< " + NAME[theme] + " >", COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
 	SDL_StartTextInput();
-	while (!quit) {
+	while (!quit && !joined) {
 		//handle user input
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {

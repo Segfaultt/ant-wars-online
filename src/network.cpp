@@ -4,6 +4,7 @@
 */
 
 #include "common.h"
+#include "entity.h"
 
 int receiver_init (int& sockfd, sockaddr_in& sock_addr)
 {
@@ -42,4 +43,19 @@ int sender_init (int& sockfd, sockaddr_in& sock_addr, char* server_ip)
 	} 
 
 	return return_value;
+}
+
+void receiver_loop (bool& quit, std::vector<visual_entity>& render_list)
+{
+	int sockfd;
+	sockaddr_in sock_addr;
+
+	receiver_init(sockfd, sock_addr);
+
+	unsigned int socklen = sizeof(sock_addr);
+	char buffer[BUFFER_SIZE];
+	std::memset(buffer, 0, BUFFER_SIZE);
+	while (!quit) {
+		recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&sock_addr, &socklen);
+	}
 }
