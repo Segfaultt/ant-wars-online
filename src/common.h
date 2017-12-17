@@ -24,7 +24,7 @@ enum faction {
 };
 
 const std::string FONT[] = {"res/Autobahn.ttf", "res/Roman SD.ttf", "res/Red October.ttf"},
-	NAME[] = {"Das Reich", "SPQR", "Soviet Socialist Union"};
+	NAME[] = {"German Reich", "SPQR", "Soviet Socialist Union"};
 
 const SDL_Color COLOR_TITLE[] = {{0x0, 0x0, 0x0}, {0xFF, 0xF1, 0x0}, {0xFF, 0xF1, 0x0}},
 	COLOR_FG[] = {{0xDB, 0x01, 0x00}, {0xFF, 0xF1, 0x0}, {0xFB, 0xF1, 0xF0}},
@@ -37,3 +37,5 @@ const Uint16 PORT_CLIENT = 52757,
 	PORT_SERVER = 52657;
 
 const unsigned int BUFFER_SIZE = 512;
+
+const std::string VERSION = "c0.0";

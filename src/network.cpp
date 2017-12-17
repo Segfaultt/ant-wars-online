@@ -17,13 +17,11 @@ int receiver_init (int& sockfd, sockaddr_in& sock_addr)
 		std::memset((char *) &sock_addr, 0, sizeof(sock_addr));	//zero addr_s
 		sock_addr.sin_family = AF_INET;
 		sock_addr.sin_port = htons(PORT_CLIENT);
-		sock_addr.sin_addr.s_addr = INADDR_ANY;
 		//bind socket
 		if (bind(sockfd, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) < 0) {
 			std::cout << "ERROR: could not bind socket\n";
 			return_value = -2;
-		}
-	} 
+		}} 
 
 	return return_value;}
 
@@ -67,4 +65,13 @@ void simple_send (int sockfd, sockaddr_in sock_addr, char* data)
 	std::memset(buffer, 0, BUFFER_SIZE);
 	strcpy(buffer, data);
 	sendto(sockfd, buffer, BUFFER_SIZE, 0, (sockaddr *)&sock_addr, socklen);
+}
+
+void simple_receive (int sockfd, sockaddr_in& sock_addr, char* buffer)
+{
+	unsigned int socklen;
+	socklen = sizeof(sock_addr);
+	std::memset(buffer, 0, BUFFER_SIZE);
+	if (recvfrom(sockfd, buffer, 512, 0, (struct sockaddr *)&sock_addr, &socklen) < 0) //receive packet
+		std::cout << "recvfrom failed" << std::endl;
 }

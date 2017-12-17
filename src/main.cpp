@@ -14,8 +14,8 @@ void menu_loop (SDL_Renderer* renderer, SDL_Window* window)
 	title.load_text("Ant Wars Colonial", COLOR_TITLE[theme], FONT[theme], SIZE_TITLE[theme], renderer);
 
 	//networking variables
-	int sockfd;
-	sockaddr_in sock_addr;
+	int sockfd_s;
+	sockaddr_in sock_addr_s;
 
 	//actual menu loop
 	bool quit = false, joined = false;
@@ -63,8 +63,9 @@ void menu_loop (SDL_Renderer* renderer, SDL_Window* window)
 						buffer_texture.load_text(buffer, COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
 				} else if (event.key.keysym.sym == SDLK_RETURN) {
 					SDL_StopTextInput();
-					sender_init(sockfd, sock_addr, buffer);
-					simple_send(sockfd, sock_addr, "Join");
+					sender_init(sockfd_s, sock_addr_s, buffer);
+					char temp = (char)theme;
+					simple_send(sockfd_s, sock_addr_s, &temp);
 				}
 				break;
 			case SDL_TEXTINPUT:
