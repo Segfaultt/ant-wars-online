@@ -1,6 +1,6 @@
-CC = g++
+CC = g++ -g
 
-C_FLAGS = -w -std=c++11 -g
+C_FLAGS = -w -std=c++14
 
 L_FLAGS = -lSDL2 -lSDL2_image -lSDL2_ttf
 

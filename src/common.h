@@ -26,7 +26,7 @@ enum faction {
 const std::string FONT[] = {"res/Autobahn.ttf", "res/Roman SD.ttf", "res/Red October.ttf"},
 	NAME[] = {"German Reich", "SPQR", "Soviet Socialist Union"};
 
-const SDL_Color COLOR_TITLE[] = {{0x0, 0x0, 0x0}, {0xFF, 0xF1, 0x0}, {0xFF, 0xF1, 0x0}},
+const SDL_Color COLOR_TITLE[] = {{0x0, 0x0, 0x0}, {0xFF, 0xF1, 0x0}, {0xFE, 0xF1, 0x0}},
 	COLOR_FG[] = {{0xDB, 0x01, 0x00}, {0xFF, 0xF1, 0x0}, {0xFB, 0xF1, 0xF0}},
 	COLOR_BG[] = {{0xFD, 0xCD, 0x01}, {0xFD, 0x0B, 0x14}, {0xED, 0x1B, 0x24}};
 
@@ -36,6 +36,17 @@ const int SIZE_TITLE[] = {80, 40, 44},
 const Uint16 PORT_CLIENT = 52757,
 	PORT_SERVER = 52657;
 
-const unsigned int BUFFER_SIZE = 512;
+const unsigned int BUFFER_SIZE = 511;
 
 const std::string VERSION = "c0.0";
+
+const double PI = 3.14159265359;
+
+/*packet rules*/
+/* 0 X X X X - network info
+   0 6 0 0 0 - ACK packet
+   1 F X X X - client joining (F - theme/faction)
+   2 x y z 0 - 32 bit - set camera (x - x coord, y - y coord, z - zoom * 100) 
+*/
+
+const char ACK[] = {0, 6};

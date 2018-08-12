@@ -2,6 +2,47 @@
 #include "sdl.h"
 #include "texture_wrapper.h"
 #include "network.h"
+#include "timer.h"
+
+#include <bitset>
+
+void game_loop (SDL_Renderer* renderer, SDL_Window* window, int sockfd_s, sockaddr_in sock_addr_s)
+{
+	//---=== Variables ===---
+	bool quit = false;
+
+	timer frame_cap;
+	const int TICKS_PER_FRAME = 1000/60;//cap framerate to 60FPS
+
+	SDL_Event e;
+	int c_x, c_y;
+
+	//---=== Preliminary Code ===---
+	char buff[BUFFER_SIZE];
+	std::memset(buff, 0, BUFFER_SIZE);
+	simple_receive(sockfd_s, sock_addr_s, buff);
+
+	//---=== Game Loop ===---
+	while (!quit) {
+		frame_cap.start();
+
+		//handle SDL events
+		while (SDL_PollEvent(&e)) {
+			//filter by event type
+			switch (e.type) {
+				case SDL_QUIT:
+					quit = true;
+					break;
+			}
+		}
+
+		//cap framerate
+		if (TICKS_PER_FRAME > frame_cap.get_time()) {
+			SDL_Delay(TICKS_PER_FRAME - frame_cap.get_time());
+		}
+		SDL_RenderPresent(renderer);
+	}
+}
 
 void menu_loop (SDL_Renderer* renderer, SDL_Window* window)
 {
@@ -30,50 +71,53 @@ void menu_loop (SDL_Renderer* renderer, SDL_Window* window)
 		//handle user input
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
-			case SDL_QUIT:
-				quit = true;
-				break;
+				case SDL_QUIT:
+					quit = true;
+					break;
 
-			case SDL_KEYDOWN:
-				if (event.key.keysym.sym == SDLK_BACKSPACE) {
-					if (strlen(buffer) > 0)
-						*(buffer + strlen(buffer) - 1) = 0;
-					if (strlen(buffer) == 0)
-						buffer_texture.load_text("Enter IP address", COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
-					else
+				case SDL_KEYDOWN:
+					if (event.key.keysym.sym == SDLK_BACKSPACE) {
+						if (strlen(buffer) > 0)
+							*(buffer + strlen(buffer) - 1) = 0;
+						if (strlen(buffer) == 0)
+							buffer_texture.load_text("Enter IP address", COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
+						else
+							buffer_texture.load_text(buffer, COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
+					} else if (event.key.keysym.sym == SDLK_LEFT) {
+						theme = (2 + theme)%3;//-1%3 gives -1 which is undesirable so I increment by 2 instead of decrementing
+
+						title.load_text("Ant Wars Colonial", COLOR_TITLE[theme], FONT[theme], SIZE_TITLE[theme], renderer);
+						faction_texture.load_text("< " + NAME[theme] + " >", COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
+
+						if (strlen(buffer) == 0)
+							buffer_texture.load_text("Enter IP address", COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
+						else
+							buffer_texture.load_text(buffer, COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
+					} else if (event.key.keysym.sym == SDLK_RIGHT) {
+						theme = (theme + 1)%3;
+						title.load_text("Ant Wars Colonial", COLOR_TITLE[theme], FONT[theme], SIZE_TITLE[theme], renderer);
+						faction_texture.load_text("< " + NAME[theme] + " >", COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
+
+						if (strlen(buffer) == 0)
+							buffer_texture.load_text("Enter IP address", COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
+						else
+							buffer_texture.load_text(buffer, COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
+					} else if (event.key.keysym.sym == SDLK_RETURN) {
+						SDL_StopTextInput();
+						sender_init(sockfd_s, sock_addr_s, buffer);
+						char tmp[2];
+						tmp[0] = 1;
+						tmp[1] = (char)theme;
+						simple_send(sockfd_s, sock_addr_s, tmp);
+						joined = true;
+					}
+					break;
+				case SDL_TEXTINPUT:
+					if (strlen(buffer) < 15) {
+						strcat(buffer, event.text.text);
 						buffer_texture.load_text(buffer, COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
-				} else if (event.key.keysym.sym == SDLK_LEFT) {
-					theme = (2 + theme)%3;//-1%3 gives -1 which is undesirable so I increment by 2 instead of decrementing
-
-					title.load_text("Ant Wars Colonial", COLOR_TITLE[theme], FONT[theme], SIZE_TITLE[theme], renderer);
-					faction_texture.load_text("< " + NAME[theme] + " >", COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
-
-					if (strlen(buffer) == 0)
-						buffer_texture.load_text("Enter IP address", COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
-					else
-						buffer_texture.load_text(buffer, COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
-				} else if (event.key.keysym.sym == SDLK_RIGHT) {
-					theme = (theme + 1)%3;
-					title.load_text("Ant Wars Colonial", COLOR_TITLE[theme], FONT[theme], SIZE_TITLE[theme], renderer);
-					faction_texture.load_text("< " + NAME[theme] + " >", COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
-
-					if (strlen(buffer) == 0)
-						buffer_texture.load_text("Enter IP address", COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
-					else
-						buffer_texture.load_text(buffer, COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
-				} else if (event.key.keysym.sym == SDLK_RETURN) {
-					SDL_StopTextInput();
-					sender_init(sockfd_s, sock_addr_s, buffer);
-					char temp = (char)theme;
-					simple_send(sockfd_s, sock_addr_s, &temp);
-				}
-				break;
-			case SDL_TEXTINPUT:
-				if (strlen(buffer) < 15) {
-					strcat(buffer, event.text.text);
-					buffer_texture.load_text(buffer, COLOR_FG[theme], FONT[theme], SIZE_FG[theme], renderer);
-				}
-				break;
+					}
+					break;
 			}
 		}
 
@@ -90,10 +134,22 @@ void menu_loop (SDL_Renderer* renderer, SDL_Window* window)
 
 		SDL_RenderPresent(renderer);
 	}
+
+	if (!quit)
+		game_loop(renderer, window, sockfd_s, sock_addr_s);
 }
 
 int main (int argc, char* argv[])
 {
+	uint8_t buff[10];
+	int a = 0;
+	uint32_to_char(3000000001, buff, a);
+	for (int i = 0; i < 10; i++) {
+		std::cout << (unsigned int)buff[i] << ", ";
+	}
+	a = 0;
+	std::cout << std::endl << char_to_uint32(buff, a);
+
 	SDL_Renderer* renderer = NULL;
 	SDL_Window* window = NULL;
 

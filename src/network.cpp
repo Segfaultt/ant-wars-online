@@ -21,9 +21,11 @@ int receiver_init (int& sockfd, sockaddr_in& sock_addr)
 		if (bind(sockfd, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) < 0) {
 			std::cout << "ERROR: could not bind socket\n";
 			return_value = -2;
-		}} 
+		}
+	} 
 
-	return return_value;}
+	return return_value;
+}
 
 int sender_init (int& sockfd, sockaddr_in& sock_addr, char* server_ip)
 {
@@ -74,4 +76,42 @@ void simple_receive (int sockfd, sockaddr_in& sock_addr, char* buffer)
 	std::memset(buffer, 0, BUFFER_SIZE);
 	if (recvfrom(sockfd, buffer, 512, 0, (struct sockaddr *)&sock_addr, &socklen) < 0) //receive packet
 		std::cout << "recvfrom failed" << std::endl;
+}
+
+
+bool wait_for_ack(int sockfd, sockaddr_in& sock_addr)
+{
+	char buffer[BUFFER_SIZE];
+	std::memset(buffer, 0, BUFFER_SIZE);
+	simple_receive(sockfd, sock_addr, buffer);
+
+	return 0;
+}
+
+void ack(int sockfd, sockaddr_in& sock_addr)
+{
+	char buffer[2];
+	strcpy(buffer, ACK);
+	simple_send(sockfd, sock_addr, buffer);
+}
+
+void uint32_to_char(uint32_t n, uint8_t *buffer, int &a)
+{
+	buffer[a  ] = (n>>24) & 0xFF;
+	buffer[a+1] = (n>>16) & 0xFF;
+	buffer[a+2] = (n>>8)  & 0xFF;
+	buffer[a+3] = n       & 0xFF;
+	a += 4;
+}
+
+uint32_t char_to_uint32(uint8_t *buffer, int &a)
+{
+	uint32_t r = 0;
+	r += buffer[a  ]<<24;
+	r += buffer[a+1]<<16;
+	r += buffer[a+2]<<8;
+	r += buffer[a+3];
+	a += 4;
+	
+	return r;
 }
