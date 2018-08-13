@@ -1,4 +1,5 @@
 #include "common.h"
+#include "entity.h"
 
 int SDL_init (SDL_Renderer*& renderer, SDL_Window*& window)
 {

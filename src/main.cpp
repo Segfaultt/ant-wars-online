@@ -3,8 +3,11 @@
 #include "texture_wrapper.h"
 #include "network.h"
 #include "timer.h"
+#include "entity.h"
 
 #include <bitset>
+#include <mutex>
+#include <thread>
 
 void game_loop (SDL_Renderer* renderer, SDL_Window* window, int sockfd_s, sockaddr_in sock_addr_s)
 {
@@ -16,15 +19,66 @@ void game_loop (SDL_Renderer* renderer, SDL_Window* window, int sockfd_s, sockad
 
 	SDL_Event e;
 	int c_x, c_y;
+	float c_z;
 
 	//---=== Preliminary Code ===---
-	char buff[BUFFER_SIZE];
-	std::memset(buff, 0, BUFFER_SIZE);
-	simple_receive(sockfd_s, sock_addr_s, buff);
+	uint8_t buff[BUFFER_SIZE];
+	do {
+		std::memset(buff, 0, BUFFER_SIZE);
+		std::cout << "waiting for camera set packet" << std::endl;
+		simple_receive(sockfd_s, sock_addr_s, buff);
+	} while (buff[0] != 2);
+	{
+		int a = 1;
+		c_x = uint8_t_to_uint32(buff, a);
+		c_y = uint8_t_to_uint32(buff, a);
+		c_z = uint8_t_to_uint32(buff, a)/1024.0;
+		std::cout << "camera set to: (" << c_x << ", " << c_y << ") with zoom: " << c_z << std::endl;
+	}
+
+	//mutex and render list for communications from server
+	std::mutex render_list_mtx;
+	std::vector<visual_entity> render_list;
+
+	init_entities(renderer);
+	std::thread listener([&render_list, &render_list_mtx, &buff, BUFFER_SIZE, quit, sockfd_s, &sock_addr_s](){
+				while (!quit) {
+					std::memset(buff, 0, BUFFER_SIZE);
+					simple_receive(sockfd_s, sock_addr_s, buff);
+					switch (buff[0]) {
+						case 3://visual entities
+						int a = 1;
+						std::vector<visual_entity> new_render_list;
+						visual_entity tmp;
+						tmp.id = uint8_t_to_uint32(buff, a);
+						tmp.et = (entity_type)uint8_t_to_uint32(buff, a);
+						tmp.x = uint8_t_to_uint32(buff, a);
+						tmp.y = uint8_t_to_uint32(buff, a);
+						tmp.angle = uint8_t_to_uint32(buff, a)/1024.0;
+						tmp.health = uint8_t_to_uint32(buff, a);
+						tmp.stamina = uint8_t_to_uint32(buff, a);
+						while (tmp.id != 0) {
+							new_render_list.push_back(tmp);
+							tmp.id = uint8_t_to_uint32(buff, a);
+							tmp.et = (entity_type)uint8_t_to_uint32(buff, a);
+							tmp.x = uint8_t_to_uint32(buff, a);
+							tmp.y = uint8_t_to_uint32(buff, a);
+							tmp.angle = uint8_t_to_uint32(buff, a)/1024.0;
+							tmp.health = uint8_t_to_uint32(buff, a);
+							tmp.stamina = uint8_t_to_uint32(buff, a);
+						}
+						render_list_mtx.lock();
+						render_list.clear();
+						render_list = new_render_list;
+						render_list_mtx.unlock();
+					}
+				}
+			});
 
 	//---=== Game Loop ===---
 	while (!quit) {
 		frame_cap.start();
+		SDL_RenderClear(renderer);
 
 		//handle SDL events
 		while (SDL_PollEvent(&e)) {
@@ -35,6 +89,30 @@ void game_loop (SDL_Renderer* renderer, SDL_Window* window, int sockfd_s, sockad
 					break;
 			}
 		}
+
+		//handle non-event keypresses
+		const Uint8* current_key_states = SDL_GetKeyboardState(NULL);
+		if (current_key_states[SDL_SCANCODE_SPACE]) {
+			c_z *= 1.02;
+		}
+		if (current_key_states[SDL_SCANCODE_LSHIFT]) {
+			c_z *= 0.98;
+		}
+
+		//render visual entities
+		render_list_mtx.lock();
+		for (visual_entity ve: render_list) {
+			//camera translations
+			int scrn_x, scrn_y;
+			int rx = c_x - ve.x;
+			scrn_x = rx*c_z;
+			int ry = c_y - ve.y;
+			scrn_y = ry/c_z;
+
+			SDL_Rect render_quad = {scrn_x, scrn_y, entity_width[ve.et]*c_z, entity_height[ve.et]*c_z};
+			SDL_RenderCopyEx(renderer, entity_texture[ve.et], NULL, &render_quad, ve.angle, NULL, SDL_FLIP_NONE);
+		}
+		render_list_mtx.unlock();
 
 		//cap framerate
 		if (TICKS_PER_FRAME > frame_cap.get_time()) {
@@ -105,9 +183,9 @@ void menu_loop (SDL_Renderer* renderer, SDL_Window* window)
 					} else if (event.key.keysym.sym == SDLK_RETURN) {
 						SDL_StopTextInput();
 						sender_init(sockfd_s, sock_addr_s, buffer);
-						char tmp[2];
+						uint8_t tmp[2];
 						tmp[0] = 1;
-						tmp[1] = (char)theme;
+						tmp[1] = (uint8_t)theme;
 						simple_send(sockfd_s, sock_addr_s, tmp);
 						joined = true;
 					}
@@ -141,15 +219,6 @@ void menu_loop (SDL_Renderer* renderer, SDL_Window* window)
 
 int main (int argc, char* argv[])
 {
-	uint8_t buff[10];
-	int a = 0;
-	uint32_to_char(3000000001, buff, a);
-	for (int i = 0; i < 10; i++) {
-		std::cout << (unsigned int)buff[i] << ", ";
-	}
-	a = 0;
-	std::cout << std::endl << char_to_uint32(buff, a);
-
 	SDL_Renderer* renderer = NULL;
 	SDL_Window* window = NULL;
 

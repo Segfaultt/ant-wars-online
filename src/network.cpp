@@ -44,7 +44,7 @@ int sender_init (int& sockfd, sockaddr_in& sock_addr, char* server_ip)
 	return return_value;
 }
 
-void receiver_loop (bool& quit, std::vector<visual_entity>& render_list)
+/*void receiver_loop (bool& quit, std::vector<visual_entity>& render_list)
 {
 	int sockfd;
 	sockaddr_in sock_addr;
@@ -52,36 +52,36 @@ void receiver_loop (bool& quit, std::vector<visual_entity>& render_list)
 	receiver_init(sockfd, sock_addr);
 
 	unsigned int socklen = sizeof(sock_addr);
-	char buffer[BUFFER_SIZE];
+	uint8_t buffer[BUFFER_SIZE];
 	std::memset(buffer, 0, BUFFER_SIZE);
 	while (!quit) {
 		recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&sock_addr, &socklen);
 	}
-}
+}*/
 
-void simple_send (int sockfd, sockaddr_in sock_addr, char* data)
+void simple_send (int sockfd, sockaddr_in sock_addr, uint8_t* data, int size)
 {
 	unsigned int socklen;
 	socklen = sizeof(sock_addr);
-	char buffer[BUFFER_SIZE];
+	uint8_t buffer[BUFFER_SIZE];
 	std::memset(buffer, 0, BUFFER_SIZE);
-	strcpy(buffer, data);
+	std::memcpy(buffer, data, size);
 	sendto(sockfd, buffer, BUFFER_SIZE, 0, (sockaddr *)&sock_addr, socklen);
 }
 
-void simple_receive (int sockfd, sockaddr_in& sock_addr, char* buffer)
+void simple_receive (int sockfd, sockaddr_in& sock_addr, uint8_t* buffer)
 {
 	unsigned int socklen;
 	socklen = sizeof(sock_addr);
 	std::memset(buffer, 0, BUFFER_SIZE);
-	if (recvfrom(sockfd, buffer, 512, 0, (struct sockaddr *)&sock_addr, &socklen) < 0) //receive packet
+	if (recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&sock_addr, &socklen) < 0) //receive packet
 		std::cout << "recvfrom failed" << std::endl;
 }
 
 
 bool wait_for_ack(int sockfd, sockaddr_in& sock_addr)
 {
-	char buffer[BUFFER_SIZE];
+	uint8_t buffer[BUFFER_SIZE];
 	std::memset(buffer, 0, BUFFER_SIZE);
 	simple_receive(sockfd, sock_addr, buffer);
 
@@ -90,12 +90,12 @@ bool wait_for_ack(int sockfd, sockaddr_in& sock_addr)
 
 void ack(int sockfd, sockaddr_in& sock_addr)
 {
-	char buffer[2];
-	strcpy(buffer, ACK);
-	simple_send(sockfd, sock_addr, buffer);
+	uint8_t buffer[2];
+	std::memcpy(buffer, ACK, BUFFER_SIZE);
+	simple_send(sockfd, sock_addr, buffer, 2);
 }
 
-void uint32_to_char(uint32_t n, uint8_t *buffer, int &a)
+void uint32_to_uint8_t(uint32_t n, uint8_t *buffer, int &a)
 {
 	buffer[a  ] = (n>>24) & 0xFF;
 	buffer[a+1] = (n>>16) & 0xFF;
@@ -104,7 +104,7 @@ void uint32_to_char(uint32_t n, uint8_t *buffer, int &a)
 	a += 4;
 }
 
-uint32_t char_to_uint32(uint8_t *buffer, int &a)
+uint32_t uint8_t_to_uint32(uint8_t *buffer, int &a)
 {
 	uint32_t r = 0;
 	r += buffer[a  ]<<24;
