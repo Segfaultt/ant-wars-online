@@ -6,112 +6,109 @@
 #include "common.h"
 #include "entity.h"
 
-int receiver_init (int& sockfd, sockaddr_in& sock_addr)
-{
-	int return_value = 0;
+int receiver_init(int &sockfd, sockaddr_in &sock_addr) {
+      int return_value = 0;
 
-	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {	//create socket
-		std::cout << "ERROR: could not create socket\n";
-		return_value = -1;
-	} else {
-		std::memset((char *) &sock_addr, 0, sizeof(sock_addr));	//zero addr_s
-		sock_addr.sin_family = AF_INET;
-		sock_addr.sin_port = htons(PORT_CLIENT);
-		//bind socket
-		if (bind(sockfd, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) < 0) {
-			std::cout << "ERROR: could not bind socket\n";
-			return_value = -2;
-		}
-	} 
+      if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) { // create socket
+            std::cout << "ERROR: could not create socket\n";
+            return_value = -1;
+      } else {
+            std::memset((char *)&sock_addr, 0, sizeof(sock_addr)); // zero
+                                                                   // addr_s
+            sock_addr.sin_family = AF_INET;
+            sock_addr.sin_port = htons(PORT_CLIENT);
+            // bind socket
+            if (bind(sockfd, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) <
+                0) {
+                  std::cout << "ERROR: could not bind socket\n";
+                  return_value = -2;
+            }
+      }
 
-	return return_value;
+      return return_value;
 }
 
-int sender_init (int& sockfd, sockaddr_in& sock_addr, char* server_ip)
-{
-	int return_value = 0;
+int sender_init(int &sockfd, sockaddr_in &sock_addr, char *server_ip) {
+      int return_value = 0;
 
-	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {	//create socket
-		std::cout << "ERROR: could not create socket\n";
-		return_value = -1;
-	} else {
-		std::memset((char *) &sock_addr, 0, sizeof(sock_addr));	//zero addr_s
-		sock_addr.sin_family = AF_INET;
-		sock_addr.sin_port = htons(PORT_SERVER);
-		sock_addr.sin_addr.s_addr = inet_addr(server_ip);
-	} 
+      if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) { // create socket
+            std::cout << "ERROR: could not create socket\n";
+            return_value = -1;
+      } else {
+            std::memset((char *)&sock_addr, 0, sizeof(sock_addr)); // zero
+                                                                   // addr_s
+            sock_addr.sin_family = AF_INET;
+            sock_addr.sin_port = htons(PORT_SERVER);
+            sock_addr.sin_addr.s_addr = inet_addr(server_ip);
+      }
 
-	return return_value;
+      return return_value;
 }
 
 /*void receiver_loop (bool& quit, std::vector<visual_entity>& render_list)
 {
-	int sockfd;
-	sockaddr_in sock_addr;
+        int sockfd;
+        sockaddr_in sock_addr;
 
-	receiver_init(sockfd, sock_addr);
+        receiver_init(sockfd, sock_addr);
 
-	unsigned int socklen = sizeof(sock_addr);
-	uint8_t buffer[BUFFER_SIZE];
-	std::memset(buffer, 0, BUFFER_SIZE);
-	while (!quit) {
-		recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&sock_addr, &socklen);
-	}
+        unsigned int socklen = sizeof(sock_addr);
+        uint8_t buffer[BUFFER_SIZE];
+        std::memset(buffer, 0, BUFFER_SIZE);
+        while (!quit) {
+                recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr
+*)&sock_addr, &socklen);
+        }
 }*/
 
-void simple_send (int sockfd, sockaddr_in sock_addr, uint8_t* data, int size)
-{
-	unsigned int socklen;
-	socklen = sizeof(sock_addr);
-	uint8_t buffer[BUFFER_SIZE];
-	std::memset(buffer, 0, BUFFER_SIZE);
-	std::memcpy(buffer, data, size);
-	sendto(sockfd, buffer, BUFFER_SIZE, 0, (sockaddr *)&sock_addr, socklen);
+void simple_send(int sockfd, sockaddr_in sock_addr, uint8_t *data, int size) {
+      unsigned int socklen;
+      socklen = sizeof(sock_addr);
+      uint8_t buffer[BUFFER_SIZE];
+      std::memset(buffer, 0, BUFFER_SIZE);
+      std::memcpy(buffer, data, size);
+      sendto(sockfd, buffer, BUFFER_SIZE, 0, (sockaddr *)&sock_addr, socklen);
 }
 
-void simple_receive (int sockfd, sockaddr_in& sock_addr, uint8_t* buffer)
-{
-	unsigned int socklen;
-	socklen = sizeof(sock_addr);
-	std::memset(buffer, 0, BUFFER_SIZE);
-	if (recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&sock_addr, &socklen) < 0) //receive packet
-		std::cout << "recvfrom failed" << std::endl;
+void simple_receive(int sockfd, sockaddr_in &sock_addr, uint8_t *buffer) {
+      unsigned int socklen;
+      socklen = sizeof(sock_addr);
+      std::memset(buffer, 0, BUFFER_SIZE);
+      if (recvfrom(sockfd, buffer, BUFFER_SIZE, 0,
+                   (struct sockaddr *)&sock_addr,
+                   &socklen) < 0) // receive packet
+            std::cout << "recvfrom failed" << std::endl;
 }
 
+bool wait_for_ack(int sockfd, sockaddr_in &sock_addr) {
+      uint8_t buffer[BUFFER_SIZE];
+      std::memset(buffer, 0, BUFFER_SIZE);
+      simple_receive(sockfd, sock_addr, buffer);
 
-bool wait_for_ack(int sockfd, sockaddr_in& sock_addr)
-{
-	uint8_t buffer[BUFFER_SIZE];
-	std::memset(buffer, 0, BUFFER_SIZE);
-	simple_receive(sockfd, sock_addr, buffer);
-
-	return 0;
+      return 0;
 }
 
-void ack(int sockfd, sockaddr_in& sock_addr)
-{
-	uint8_t buffer[2];
-	std::memcpy(buffer, ACK, BUFFER_SIZE);
-	simple_send(sockfd, sock_addr, buffer, 2);
+void ack(int sockfd, sockaddr_in &sock_addr) {
+      uint8_t buffer[2];
+      std::memcpy(buffer, ACK, 2);
+      simple_send(sockfd, sock_addr, buffer, 2);
 }
 
-void uint32_to_uint8_t(uint32_t n, uint8_t *buffer, int &a)
-{
-	buffer[a  ] = (n>>24) & 0xFF;
-	buffer[a+1] = (n>>16) & 0xFF;
-	buffer[a+2] = (n>>8)  & 0xFF;
-	buffer[a+3] = n       & 0xFF;
-	a += 4;
+void uint32_to_uint8_t(uint32_t n, uint8_t *buffer, int &a) {
+      buffer[a] = (n >> 24) & 0xFF;
+      buffer[a + 1] = (n >> 16) & 0xFF;
+      buffer[a + 2] = (n >> 8) & 0xFF;
+      buffer[a + 3] = n & 0xFF;
+      a += 4;
 }
 
-uint32_t uint8_t_to_uint32(uint8_t *buffer, int &a)
-{
-	uint32_t r = 0;
-	r += buffer[a  ]<<24;
-	r += buffer[a+1]<<16;
-	r += buffer[a+2]<<8;
-	r += buffer[a+3];
-	a += 4;
-	
-	return r;
+uint32_t uint8_t_to_uint32(uint8_t *buffer, int &a) {
+      uint32_t r = 0;
+      r += buffer[a] << 24;
+      r += buffer[a + 1] << 16;
+      r += buffer[a + 2] << 8;
+      r += buffer[a + 3];
+      a += 4;
+
+      return r;
 }
