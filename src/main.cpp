@@ -29,10 +29,8 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
       do {
             std::memset(buff, 0, BUFFER_SIZE);
 
-            SDL_Delay(1000);
             std::cout << "waiting for camera set packet" << std::endl;
             simple_receive(sockfd_s, sock_addr_s, buff);
-            ack(sockfd_s, sock_addr_s);
       } while (buff[0] != 2);
       {
             int a = 1;
@@ -46,15 +44,16 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
       //---=== Map Texture ===---
       do {
             std::memset(buff, 0, BUFFER_SIZE);
-            std::cout << "waiting for map location packet, sending ack"
+            std::cout << "waiting for map location packet"
                       << std::endl;
-            ack(sockfd_s, sock_addr_s);
             simple_receive(sockfd_s, sock_addr_s, buff);
       } while (buff[0] != 4);
+      std::cout << "map location recieved: " << &buff[1] << std::endl;
+
       char
           map[BUFFER_SIZE]; // 500 bytes is a small price to pay to never be too
                             // small
-      memcpy(map, (const char *)buff[1], BUFFER_SIZE - 20);
+      memcpy(map, &buff[1], BUFFER_SIZE-1);
       SDL_Texture *bg_texture = NULL;
       std::cout << map;
       bg_texture = get_map(map);
@@ -152,7 +151,7 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
 void menu_loop(SDL_Renderer *renderer, SDL_Window *window) {
       // randomly pick faction
       srand(clock());
-      int theme = rand()%LAST_FACTION;
+      int theme = rand() % LAST_FACTION;
 
       // set up style
       texture_wrapper title;

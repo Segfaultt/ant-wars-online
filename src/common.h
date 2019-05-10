@@ -45,7 +45,7 @@ const double PI = 3.14159265359;
    3 i e x y a h s - 32 bit - repeating - visible entity (i - id, e - entity
    type, x - x coord, y - y coord, a - angle in radians * 1024, h - health, s -
    stamina)
-   4 d 0 X X - tell client what map is being used (d - c string showing the
+   4 d 0 X X - tell client what map is being used (d - cstring showing the
    location of the map image)
 */
 
