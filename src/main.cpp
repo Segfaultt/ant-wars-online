@@ -44,8 +44,7 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
       //---=== Map Texture ===---
       do {
             std::memset(buff, 0, BUFFER_SIZE);
-            std::cout << "waiting for map location packet"
-                      << std::endl;
+            std::cout << "waiting for map location packet" << std::endl;
             simple_receive(sockfd_s, sock_addr_s, buff);
       } while (buff[0] != 4);
       std::cout << "map location recieved: " << &buff[1] << std::endl;
@@ -53,7 +52,7 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
       char
           map[BUFFER_SIZE]; // 500 bytes is a small price to pay to never be too
                             // small
-      memcpy(map, &buff[1], BUFFER_SIZE-1);
+      memcpy(map, &buff[1], BUFFER_SIZE - 1);
       SDL_Texture *bg_texture = NULL;
       std::cout << map;
       bg_texture = get_map(map);
@@ -73,15 +72,8 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
                         int a = 1;
                         std::vector<visual_entity> new_render_list;
                         visual_entity tmp;
-                        tmp.id = uint8_t_to_uint32(buff, a);
-                        tmp.et = (entity_type)uint8_t_to_uint32(buff, a);
-                        tmp.x = uint8_t_to_uint32(buff, a);
-                        tmp.y = uint8_t_to_uint32(buff, a);
-                        tmp.angle = uint8_t_to_uint32(buff, a) / 1024.0;
-                        tmp.health = uint8_t_to_uint32(buff, a);
-                        tmp.stamina = uint8_t_to_uint32(buff, a);
-                        while (tmp.id != 0) {
-                              new_render_list.push_back(tmp);
+                        while (uint8_t_to_uint32(buff, a) != 0) {
+                              a -= 4;
                               tmp.id = uint8_t_to_uint32(buff, a);
                               tmp.et = (entity_type)uint8_t_to_uint32(buff, a);
                               tmp.x = uint8_t_to_uint32(buff, a);
@@ -89,7 +81,9 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
                               tmp.angle = uint8_t_to_uint32(buff, a) / 1024.0;
                               tmp.health = uint8_t_to_uint32(buff, a);
                               tmp.stamina = uint8_t_to_uint32(buff, a);
+                              new_render_list.push_back(tmp);
                         }
+
                         render_list_mtx.lock();
                         render_list.clear();
                         render_list = new_render_list;
@@ -126,11 +120,8 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
             render_list_mtx.lock();
             for (visual_entity ve : render_list) {
                   // camera translations
-                  int scrn_x, scrn_y;
-                  int rx = c_x - ve.x;
-                  scrn_x = rx * c_z;
-                  int ry = c_y - ve.y;
-                  scrn_y = ry / c_z;
+                  int rx = c_x - ve.x, scrn_x = rx * c_z, ry = c_y - ve.y,
+                      scrn_y = ry / c_z;
 
                   SDL_Rect render_quad = {scrn_x, scrn_y,
                                           entity_width[ve.et] * c_z,
@@ -194,10 +185,7 @@ void menu_loop(SDL_Renderer *renderer, SDL_Window *window) {
                                         buffer, COLOR_FG[theme], FONT[theme],
                                         SIZE_FG[theme], renderer);
                         } else if (event.key.keysym.sym == SDLK_LEFT) {
-                              theme =
-                                  (2 + theme) %
-                                  3; //-1%3 gives -1 which is undesirable so I
-                                     // increment by 2 instead of decrementing
+                              theme = abs(theme++ % 3);
 
                               title.load_text("Ant Wars Colonial",
                                               COLOR_TITLE[theme], FONT[theme],
