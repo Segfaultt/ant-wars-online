@@ -78,7 +78,7 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
                               tmp.et = (entity_type)uint8_t_to_uint32(buff, a);
                               tmp.x = uint8_t_to_uint32(buff, a);
                               tmp.y = uint8_t_to_uint32(buff, a);
-                              tmp.angle = uint8_t_to_uint32(buff, a) / 1024.0;
+                              tmp.angle = uint8_t_to_uint32(buff, a);
                               tmp.health = uint8_t_to_uint32(buff, a);
                               tmp.stamina = uint8_t_to_uint32(buff, a);
                               new_render_list.push_back(tmp);
@@ -115,19 +115,56 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
             if (current_key_states[SDL_SCANCODE_LSHIFT]) {
                   c_z *= 0.98;
             }
+            if (current_key_states[SDL_SCANCODE_W]) {
+                  uint8_t tmp[2];
+                  tmp[0] = 5;
+                  tmp[1] = 0;
+                  simple_send(sockfd_s, sock_addr_s, tmp);
+            } else if (current_key_states[SDL_SCANCODE_S]) {
+                  uint8_t tmp[2];
+                  tmp[0] = 5;
+                  tmp[1] = 1;
+                  simple_send(sockfd_s, sock_addr_s, tmp);
+            }
+            if (current_key_states[SDL_SCANCODE_D]) {
+                  uint8_t tmp[2];
+                  tmp[0] = 5;
+                  tmp[1] = 2;
+                  simple_send(sockfd_s, sock_addr_s, tmp);
+            }
+            if (current_key_states[SDL_SCANCODE_A]) {
+                  uint8_t tmp[2];
+                  tmp[0] = 5;
+                  tmp[1] = 3;
+                  simple_send(sockfd_s, sock_addr_s, tmp);
+            }
+            if (current_key_states[SDL_SCANCODE_RIGHT]) {
+                  c_x -= 10/c_z;
+            }
+            if (current_key_states[SDL_SCANCODE_LEFT]) {
+                  c_x += 10/c_z;
+            }
+            if (current_key_states[SDL_SCANCODE_UP]) {
+                  c_y += 10/c_z;
+            }
+            if (current_key_states[SDL_SCANCODE_DOWN]) {
+                  c_y -= 10/c_z;
+            }
 
             // render visual entities
             render_list_mtx.lock();
             for (visual_entity ve : render_list) {
                   // camera translations
                   int rx = c_x - ve.x, scrn_x = rx * c_z, ry = c_y - ve.y,
-                      scrn_y = ry / c_z;
+                      scrn_y = ry * c_z;
 
-                  SDL_Rect render_quad = {scrn_x, scrn_y,
-                                          entity_width[ve.et] * c_z,
-                                          entity_height[ve.et] * c_z};
+                  SDL_Rect render_quad = {
+                      scrn_x - entity_width[ve.et] * c_z / 2 + screen_width / 2,
+                      scrn_y + screen_height / 2 - entity_height[ve.et] * c_z,
+                      entity_width[ve.et] * c_z, entity_height[ve.et] * c_z};
                   SDL_RenderCopyEx(renderer, entity_texture[ve.et], NULL,
-                                   &render_quad, ve.angle, NULL, SDL_FLIP_NONE);
+                                   &render_quad, (double)ve.angle+270,
+                                   NULL, SDL_FLIP_NONE);
             }
             render_list_mtx.unlock();
 

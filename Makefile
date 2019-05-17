@@ -4,7 +4,7 @@ C_FLAGS = -w -std=c++14
 
 L_FLAGS = -lSDL2 -lSDL2_image -lSDL2_ttf -pthread
 
-OBJ_NAME = ant_wars_colonial
+OBJ_NAME = ant_wars_online
 
 OBJS = obj/sdl.o obj/main.o obj/texture_wrapper.o obj/network.o obj/entity.o
 
