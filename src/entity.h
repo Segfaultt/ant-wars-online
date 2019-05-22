@@ -25,6 +25,7 @@ struct visual_entity {
 };
 
 extern const char *entity_texture_file[N_ENTITIES];
+extern const std::string entity_name[N_ENTITIES];
 
 extern SDL_Texture *entity_texture[N_ENTITIES];
 

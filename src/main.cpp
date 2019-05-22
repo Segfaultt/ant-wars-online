@@ -61,7 +61,8 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
       std::mutex render_list_mtx;
       std::vector<visual_entity> render_list;
 
-      init_entities(renderer);
+      init_entities(renderer);//preload visual entities
+      //create thread to handle packets from server
       std::thread listener([&render_list, &render_list_mtx, &buff, BUFFER_SIZE,
                             quit, sockfd_s, &sock_addr_s]() {
             while (!quit) {
@@ -115,40 +116,28 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
             if (current_key_states[SDL_SCANCODE_LSHIFT]) {
                   c_z *= 0.98;
             }
-            if (current_key_states[SDL_SCANCODE_W]) {
+            if (current_key_states[SDL_SCANCODE_UP]) {
                   uint8_t tmp[2];
                   tmp[0] = 5;
                   tmp[1] = 0;
                   simple_send(sockfd_s, sock_addr_s, tmp);
-            } else if (current_key_states[SDL_SCANCODE_S]) {
+            } else if (current_key_states[SDL_SCANCODE_DOWN]) {
                   uint8_t tmp[2];
                   tmp[0] = 5;
                   tmp[1] = 1;
                   simple_send(sockfd_s, sock_addr_s, tmp);
             }
-            if (current_key_states[SDL_SCANCODE_D]) {
+            if (current_key_states[SDL_SCANCODE_RIGHT]) {
                   uint8_t tmp[2];
                   tmp[0] = 5;
                   tmp[1] = 2;
                   simple_send(sockfd_s, sock_addr_s, tmp);
             }
-            if (current_key_states[SDL_SCANCODE_A]) {
+            if (current_key_states[SDL_SCANCODE_LEFT]) {
                   uint8_t tmp[2];
                   tmp[0] = 5;
                   tmp[1] = 3;
                   simple_send(sockfd_s, sock_addr_s, tmp);
-            }
-            if (current_key_states[SDL_SCANCODE_RIGHT]) {
-                  c_x -= 10/c_z;
-            }
-            if (current_key_states[SDL_SCANCODE_LEFT]) {
-                  c_x += 10/c_z;
-            }
-            if (current_key_states[SDL_SCANCODE_UP]) {
-                  c_y += 10/c_z;
-            }
-            if (current_key_states[SDL_SCANCODE_DOWN]) {
-                  c_y -= 10/c_z;
             }
 
             // render visual entities
@@ -163,8 +152,8 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
                       scrn_y + screen_height / 2 - entity_height[ve.et] * c_z,
                       entity_width[ve.et] * c_z, entity_height[ve.et] * c_z};
                   SDL_RenderCopyEx(renderer, entity_texture[ve.et], NULL,
-                                   &render_quad, (double)ve.angle+270,
-                                   NULL, SDL_FLIP_NONE);
+                                   &render_quad, (double)ve.angle + 270, NULL,
+                                   SDL_FLIP_NONE);
             }
             render_list_mtx.unlock();
 
@@ -177,14 +166,9 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
 }
 
 void menu_loop(SDL_Renderer *renderer, SDL_Window *window) {
-      // randomly pick faction
-      srand(clock());
-      int theme = rand() % LAST_FACTION;
-
       // set up style
       texture_wrapper title;
-      title.load_text("Ant Wars Colonial", COLOR_TITLE[theme], FONT[theme],
-                      SIZE_TITLE[theme], renderer);
+      title.load_text("Ant Wars Online", {0x0, 0x0, 0x0}, FONT, 40, renderer);
 
       // networking variables
       int sockfd_s;
@@ -194,12 +178,15 @@ void menu_loop(SDL_Renderer *renderer, SDL_Window *window) {
       bool quit = false, joined = false;
       SDL_Event event;
       char buffer[15];
+      srand(clock());
+      int etype = rand() % (int)N_ENTITIES;
       std::memset(buffer, 0, 15);
-      texture_wrapper buffer_texture, faction_texture;
-      buffer_texture.load_text("Enter IP address", COLOR_FG[theme], FONT[theme],
-                               SIZE_FG[theme], renderer);
-      faction_texture.load_text("< " + NAME[theme] + " >", COLOR_FG[theme],
-                                FONT[theme], SIZE_FG[theme], renderer);
+      texture_wrapper buffer_texture, type_texture;
+      buffer_texture.load_text("Enter IP address", {0x0, 0x0, 0x0}, FONT, 24,
+                               renderer);
+      type_texture.load_text("< " + entity_name[etype] + " >", {0x0, 0x0, 0x0},
+                             FONT, 24, renderer);
+
       SDL_StartTextInput();
       while (!quit && !joined) {
             // handle user input
@@ -215,53 +202,32 @@ void menu_loop(SDL_Renderer *renderer, SDL_Window *window) {
                                     *(buffer + strlen(buffer) - 1) = 0;
                               if (strlen(buffer) == 0)
                                     buffer_texture.load_text(
-                                        "Enter IP address", COLOR_FG[theme],
-                                        FONT[theme], SIZE_FG[theme], renderer);
+                                        "Enter IP address", {0x0, 0x0, 0x0},
+                                        FONT, 24, renderer);
                               else
                                     buffer_texture.load_text(
-                                        buffer, COLOR_FG[theme], FONT[theme],
-                                        SIZE_FG[theme], renderer);
-                        } else if (event.key.keysym.sym == SDLK_LEFT) {
-                              theme = abs(theme++ % 3);
+                                        buffer, {0x0, 0x0, 0x0}, FONT, 24,
+                                        renderer);
 
-                              title.load_text("Ant Wars Colonial",
-                                              COLOR_TITLE[theme], FONT[theme],
-                                              SIZE_TITLE[theme], renderer);
-                              faction_texture.load_text(
-                                  "< " + NAME[theme] + " >", COLOR_FG[theme],
-                                  FONT[theme], SIZE_FG[theme], renderer);
-
-                              if (strlen(buffer) == 0)
-                                    buffer_texture.load_text(
-                                        "Enter IP address", COLOR_FG[theme],
-                                        FONT[theme], SIZE_FG[theme], renderer);
-                              else
-                                    buffer_texture.load_text(
-                                        buffer, COLOR_FG[theme], FONT[theme],
-                                        SIZE_FG[theme], renderer);
                         } else if (event.key.keysym.sym == SDLK_RIGHT) {
-                              theme = (theme + 1) % 3;
-                              title.load_text("Ant Wars Colonial",
-                                              COLOR_TITLE[theme], FONT[theme],
-                                              SIZE_TITLE[theme], renderer);
-                              faction_texture.load_text(
-                                  "< " + NAME[theme] + " >", COLOR_FG[theme],
-                                  FONT[theme], SIZE_FG[theme], renderer);
+                              etype = (++etype) % N_ENTITIES;
 
-                              if (strlen(buffer) == 0)
-                                    buffer_texture.load_text(
-                                        "Enter IP address", COLOR_FG[theme],
-                                        FONT[theme], SIZE_FG[theme], renderer);
-                              else
-                                    buffer_texture.load_text(
-                                        buffer, COLOR_FG[theme], FONT[theme],
-                                        SIZE_FG[theme], renderer);
+                              type_texture.load_text(
+                                  "< " + entity_name[etype] + " >",
+                                  {0x0, 0x0, 0x0}, FONT, 24, renderer);
+                        } else if (event.key.keysym.sym == SDLK_LEFT) {
+                              etype = (--etype+N_ENTITIES) % N_ENTITIES;
+
+                              type_texture.load_text(
+                                  "< " + entity_name[etype] + " >",
+                                  {0x0, 0x0, 0x0}, FONT, 24, renderer);
+
                         } else if (event.key.keysym.sym == SDLK_RETURN) {
                               SDL_StopTextInput();
                               sender_init(sockfd_s, sock_addr_s, buffer);
                               uint8_t tmp[2];
                               tmp[0] = 1;
-                              tmp[1] = (uint8_t)theme;
+                              tmp[1] = (uint8_t)etype;
                               simple_send(sockfd_s, sock_addr_s, tmp);
                               joined = true;
                         }
@@ -269,28 +235,26 @@ void menu_loop(SDL_Renderer *renderer, SDL_Window *window) {
                   case SDL_TEXTINPUT:
                         if (strlen(buffer) < 15) {
                               strcat(buffer, event.text.text);
-                              buffer_texture.load_text(
-                                  buffer, COLOR_FG[theme], FONT[theme],
-                                  SIZE_FG[theme], renderer);
+                              buffer_texture.load_text(buffer, {0x0, 0x0, 0x0},
+                                                       FONT, 24, renderer);
                         }
                         break;
                   }
             }
 
             // render screen
-            SDL_SetRenderDrawColor(renderer, COLOR_BG[theme].r,
-                                   COLOR_BG[theme].g, COLOR_BG[theme].b, 0xFF);
+            SDL_SetRenderDrawColor(renderer, 0xb0, 0x80, 0x99, 0xFF);
             SDL_RenderClear(renderer);
 
             // modulate and render title
             title.render_from_centre(screen_width / 2, screen_height / 3,
                                      renderer);
+            type_texture.render_from_centre(screen_width / 2,
+                                            screen_height * 2 / 3, renderer);
 
             // render foreground
             buffer_texture.render_from_centre(
                 screen_width / 2, screen_height * 2 / 3 + 50, renderer);
-            faction_texture.render_from_centre(screen_width / 2,
-                                               screen_height * 2 / 3, renderer);
 
             SDL_RenderPresent(renderer);
       }

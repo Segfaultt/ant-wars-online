@@ -9,6 +9,10 @@ const char *entity_texture_file[N_ENTITIES] = {
     "res/ant-trap-jaw.png", "res/ant-worker.png",  "res/ant-builder.png",
     "res/ant-flying.png",   "res/ant-hipster.png", "res/ant-laser.png"};
 
+const std::string entity_name[N_ENTITIES] = {"Nipper",   "Moonboy", "Tesla",
+                                      "Trap Jaw", "Worker",  "Builder",
+                                      "Flying",   "Hipster", "Laser"};
+
 SDL_Texture *entity_texture[N_ENTITIES];
 
 unsigned int entity_width[N_ENTITIES];
