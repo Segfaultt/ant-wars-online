@@ -11,6 +11,7 @@
 #include <thread>
 
 SDL_Texture *get_map(const char *map) {}
+int visual_entity_index;
 
 void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
                sockaddr_in sock_addr_s) {
@@ -21,24 +22,21 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
       const int TICKS_PER_FRAME = 1000 / 60; // cap framerate to 60FPS
 
       SDL_Event e;
-      int c_x, c_y;
-      float c_z;
+      int c_x = 0, c_y = 0;
+      float c_z = 1;
 
       //---=== Preliminary Code ===---
       uint8_t buff[BUFFER_SIZE];
       do {
             std::memset(buff, 0, BUFFER_SIZE);
 
-            std::cout << "waiting for camera set packet" << std::endl;
+            std::cout << "waiting for index set packet" << std::endl;
             simple_receive(sockfd_s, sock_addr_s, buff);
       } while (buff[0] != 2);
       {
             int a = 1;
-            c_x = uint8_t_to_uint32(buff, a);
-            c_y = uint8_t_to_uint32(buff, a);
-            c_z = uint8_t_to_uint32(buff, a) / 1024.0;
-            std::cout << "camera set to: (" << c_x << ", " << c_y
-                      << ") with zoom: " << c_z << std::endl;
+            visual_entity_index = uint8_t_to_uint32(buff, a);
+            std::cout << "index set to " << visual_entity_index << std::endl;
       }
 
       //---=== Map Texture ===---
@@ -61,8 +59,8 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
       std::mutex render_list_mtx;
       std::vector<visual_entity> render_list;
 
-      init_entities(renderer);//preload visual entities
-      //create thread to handle packets from server
+      init_entities(renderer); // preload visual entities
+      // create thread to handle packets from server
       std::thread listener([&render_list, &render_list_mtx, &buff, BUFFER_SIZE,
                             quit, sockfd_s, &sock_addr_s]() {
             while (!quit) {
@@ -116,36 +114,42 @@ void game_loop(SDL_Renderer *renderer, SDL_Window *window, int sockfd_s,
             if (current_key_states[SDL_SCANCODE_LSHIFT]) {
                   c_z *= 0.98;
             }
-            if (current_key_states[SDL_SCANCODE_UP]) {
+            if (current_key_states[SDL_SCANCODE_W]) {
                   uint8_t tmp[2];
                   tmp[0] = 5;
                   tmp[1] = 0;
                   simple_send(sockfd_s, sock_addr_s, tmp);
-            } else if (current_key_states[SDL_SCANCODE_DOWN]) {
+            } else if (current_key_states[SDL_SCANCODE_S]) {
                   uint8_t tmp[2];
                   tmp[0] = 5;
                   tmp[1] = 1;
                   simple_send(sockfd_s, sock_addr_s, tmp);
             }
-            if (current_key_states[SDL_SCANCODE_RIGHT]) {
+            if (current_key_states[SDL_SCANCODE_D]) {
                   uint8_t tmp[2];
                   tmp[0] = 5;
                   tmp[1] = 2;
                   simple_send(sockfd_s, sock_addr_s, tmp);
             }
-            if (current_key_states[SDL_SCANCODE_LEFT]) {
+            if (current_key_states[SDL_SCANCODE_A]) {
                   uint8_t tmp[2];
                   tmp[0] = 5;
                   tmp[1] = 3;
                   simple_send(sockfd_s, sock_addr_s, tmp);
             }
 
+            // make camera follow
+            c_x += (render_list[visual_entity_index].x - c_x) / 40 ;
+            c_y += (render_list[visual_entity_index].y - c_y) / 60 ;
+
             // render visual entities
             render_list_mtx.lock();
             for (visual_entity ve : render_list) {
                   // camera translations
-                  int rx = c_x - ve.x, scrn_x = rx * c_z, ry = c_y - ve.y,
-                      scrn_y = ry * c_z;
+                  double rx = c_x - ve.x;
+                  int scrn_x = rx * c_z;
+                  double ry = c_y - ve.y;
+                  int scrn_y = ry * c_z;
 
                   SDL_Rect render_quad = {
                       scrn_x - entity_width[ve.et] * c_z / 2 + screen_width / 2,
@@ -216,7 +220,7 @@ void menu_loop(SDL_Renderer *renderer, SDL_Window *window) {
                                   "< " + entity_name[etype] + " >",
                                   {0x0, 0x0, 0x0}, FONT, 24, renderer);
                         } else if (event.key.keysym.sym == SDLK_LEFT) {
-                              etype = (--etype+N_ENTITIES) % N_ENTITIES;
+                              etype = (--etype + N_ENTITIES) % N_ENTITIES;
 
                               type_texture.load_text(
                                   "< " + entity_name[etype] + " >",
